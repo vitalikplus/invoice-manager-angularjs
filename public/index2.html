@@ -58,7 +58,7 @@
                             <th>quantity</th>
                         </thead>
                         <tbody>
-                            <tr ng-repeat="invoiceItem in invoiceItems | filter : {invoice_id : invoice.id}">
+                            <tr ng-repeat="invoiceItem in invoiceItemsCurrent | filter : {invoice_id : invoice.id}">
                                 <!--<td>{{ product.id }}</td>-->
                                 <td>{{invoiceItem.id}}</td>
                                 <td>{{invoiceItem.quantity}}</td>

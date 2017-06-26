@@ -2,9 +2,9 @@ angular.module("invoiceApp", [])
 .controller("defaultCtrl", function ($scope) {
 
     $scope.invoices = [
-        { id: 101, customer_id: 1, discount: 0.5, total: 2000},
-        { id: 102, customer_id: 1, discount: 0.1, total: 1000},
-        { id: 103, customer_id: 2, discount: 0.9, total: 300}
+        { id: 102, customer_id: 1, discount: 0.5, total: 2000},
+        { id: 103, customer_id: 1, discount: 0.1, total: 1000},
+        { id: 104, customer_id: 2, discount: 0.9, total: 300}
     ]
     
     $scope.customers = [
@@ -19,11 +19,16 @@ angular.module("invoiceApp", [])
         { id: 203, name: "model S", price: 150}
     ]     
 
-    $scope.invoiceItems = [
-        { id: 1001, invoice_id: 101, product_id: 201, quantity: 12},
-        { id: 1002, invoice_id: 101, product_id: 202, quantity: 12},
+    $scope.invoiceItemsCurrent = [
+        { id: 1001, invoice_id: 101, product_id: 201, quantity: 6},
+        { id: 1002, invoice_id: 101, product_id: 202, quantity: 9},
         { id: 1003, invoice_id: 101, product_id: 203, quantity: 12},
-        { id: 1004, invoice_id: 102, product_id: 201, quantity: 12},
+    ] 
+
+    $scope.invoiceItemsAll = [
+        { id: 1001, invoice_id: 102, product_id: 201, quantity: 6},
+        { id: 1002, invoice_id: 103, product_id: 202, quantity: 9},
+        { id: 1003, invoice_id: 104, product_id: 203, quantity: 12},
     ] 
 
     $scope.initInvoice = function(){
@@ -34,6 +39,8 @@ angular.module("invoiceApp", [])
         $scope.invoice.customer_id = $scope.selectedCustomer.id;
         $scope.invoice.discount = 0;
         $scope.invoice.total = 0;
+
+        // $scope.invoiceItemsCurrent = [];
     }
 
     $scope.initInvoiceItem = function() {
@@ -55,6 +62,10 @@ angular.module("invoiceApp", [])
                 customer_id: invoice.customer_id,
                 total: invoice.total
             });
+            $scope.invoiceItemsCurrent.forEach( (elem) => {
+                $scope.invoiceItemsAll.push(elem);
+            };
+            console.log($scope.invoiceItemsAll);
             $scope.initInvoice();
             $scope.initInvoiceItem();
         }
@@ -76,7 +87,7 @@ angular.module("invoiceApp", [])
             angular.isDefined(invoiceItem.invoice_id) &&
             angular.isDefined(invoiceItem.product_id) &&
             angular.isDefined(invoiceItem.quantity)) {
-            $scope.invoiceItems.push({
+            $scope.invoiceItemsCurrent.push({
                 id: invoiceItem.id,
                 invoice_id: invoiceItem.invoice_id,
                 product_id: invoiceItem.product_id,
@@ -88,7 +99,7 @@ angular.module("invoiceApp", [])
     }
 
     $scope.totalCalc = function() {
-        let total = $scope.invoiceItems.reduce( (total, elem) => {
+        let total = $scope.invoiceItemsCurrent.reduce( (total, elem) => {
             if (elem.invoice_id == $scope.invoice.id) {
                 return total + elem.quantity; 
                 } else return total;
