@@ -1,3 +1,4 @@
+# here shoud be the text for client app as well
 # Dependencies
 
 - sqlite3
