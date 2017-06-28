@@ -1,115 +1,174 @@
 angular.module("invoiceApp", [])
-.controller("defaultCtrl", function ($scope) {
+.controller("defaultCtrl", function ($scope,  $http) {
 
-    $scope.invoices = [
-        { id: 102, customer_id: 1, discount: 0.5, total: 2000},
-        { id: 103, customer_id: 1, discount: 0.1, total: 1000},
-        { id: 104, customer_id: 2, discount: 0.9, total: 300}
-    ]
-    
-    $scope.customers = [
-        { id: 1, name: "Intel", address: "USA", phone: "+1-050-411"},
-        { id: 2, name: "Google", address: "Pal-Alto", phone: "+1-050-411"},
-        { id: 3, name: "Apple", address: "California", phone: "+1-050-411"}
-    ]  
+    $scope.getCustomers = function () {
+        $http.get("http://localhost:8000/api/customers/").then( 
+            (response) => {
+                $scope.customers = response.data;
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    }
 
-    $scope.products = [
-        { id: 201, name: "model X", price: 350},
-        { id: 202, name: "model Y", price: 450},
-        { id: 203, name: "model S", price: 150}
-    ]     
+    $scope.getInvoices = function () {
+        $http.get("http://localhost:8000/api/invoices/").then( 
+            (response) => {
+                $scope.invoices = response.data;
+                $scope.invoices.map( (elem)=> {
+                    elem.customer_name  = $scope.matchCustomerNameById(elem.customer_id);
+                }); 
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    } 
 
-    $scope.invoiceItemsCurrent = [
-        { id: 1001, invoice_id: 101, product_id: 201, quantity: 6},
-        { id: 1002, invoice_id: 101, product_id: 202, quantity: 9},
-        { id: 1003, invoice_id: 101, product_id: 203, quantity: 12},
+    $scope.getProducts = function () {
+        $http.get("http://localhost:8000/api/products/").then( 
+            (response) => {
+                $scope.products = response.data;
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    }
+
+    $scope.getInvoiceItems = function (invoice_id) {
+        $http.get("http://localhost:8000/api/invoices/" + invoice_id + '/items').then( 
+            (response) => {
+                $scope.invoiceItems = response.data;
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    } 
+
+    $scope.postNewInvoice = function (newInvoice) {
+        $http.post("http://localhost:8000/api/invoices/", newInvoice).then( 
+            (response) => {
+                $scope.invoice = response.data;
+                  $scope.invoiceItem.invoice_id = $scope.invoice.id;
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    }    
+
+    $scope.putUpdatedInvoice = function (updatedInvoice) {
+        $http.put("http://localhost:8000/api/invoices/" + updatedInvoice.id, updatedInvoice).then( 
+            (response) => {
+                $scope.invoice = response.data;
+                $scope.invoice.customer_name = $scope.matchCustomerNameById( $scope.invoice.customer_id );
+                let index = $scope.invoices.findIndex( (elem)=> { return elem.id == $scope.invoice.id} );                 
+                $scope.invoices[index] = $scope.invoice;
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    }  
+
+    $scope.postNewInvoiceItem = function (invoiceItem) {
+        $http.post("http://localhost:8000/api/invoices/" + invoiceItem.invoice_id + "/items", invoiceItem).then( 
+            (response) => {
+                let responseItem = response.data;
+                responseItem.product_name = $scope.matchProductNameById(responseItem.product_id);
+                responseItem.product_price = $scope.matchProductPriceById(responseItem.product_id);
+                $scope.invoiceItems.push(responseItem);
+                $scope.totalCalc(); 
+                $scope.putUpdatedInvoice($scope.invoice);
+        }, (response) => {
+                console.log(response.statusText)
+        })                
+    }
+
+    $scope.invoiceItems = [  //invoice items in the current invoice 
     ] 
 
-    $scope.invoiceItemsAll = [
-        { id: 1001, invoice_id: 102, product_id: 201, quantity: 6},
-        { id: 1002, invoice_id: 103, product_id: 202, quantity: 9},
-        { id: 1003, invoice_id: 104, product_id: 203, quantity: 12},
-    ] 
+    $scope.invoice = {} //current invoice
+    $scope.invoiceItem = {}; //current Invoice item
+    $scope.selectedCustomer = {}; //current Customer
+    $scope.selectedProduct = {}; //current Product  
+
+    $scope.formDisabled = true;
 
     $scope.initInvoice = function(){
         $scope.invoice = {}
-        $scope.selectedCustomer = $scope.customers[0];
-        $scope.selectedProduct = $scope.products[0];
-        $scope.invoice.id = new Date().getTime();
-        $scope.invoice.customer_id = $scope.selectedCustomer.id;
+        if ($scope.customers[0]) $scope.selectedCustomer = $scope.customers[0];
+        if ($scope.products[0]) $scope.selectedProduct = $scope.products[0];
+        if ($scope.selectedCustomer.id) $scope.invoice.customer_id = $scope.selectedCustomer.id;
+        $scope.invoice.customer_name = $scope.selectedCustomer.name;
         $scope.invoice.discount = 0;
         $scope.invoice.total = 0;
-
-        // $scope.invoiceItemsCurrent = [];
     }
 
     $scope.initInvoiceItem = function() {
         $scope.invoiceItem = {}
-        $scope.invoiceItem.id = new Date().getTime();
         $scope.invoiceItem.invoice_id = $scope.invoice.id;
         $scope.invoiceItem.product_id = $scope.selectedProduct.id;
+        $scope.invoiceItem.product_name = $scope.selectedProduct.name; //extra field
+        $scope.invoiceItem.product_price = $scope.selectedProduct.price; //extra field
         $scope.invoiceItem.quantity = 1;        
     }
 
-    $scope.addInvoice = function (invoice) {
-        //angular.isDefined - функция, которая позволяет проверить наличие свойства объекта.
-        if (angular.isDefined(invoice) &&
-            angular.isDefined(invoice.id) &&
-            angular.isDefined(invoice.discount)) {
-            $scope.invoices.push({
-                id: invoice.id,
-                discount: invoice.discount,
-                customer_id: invoice.customer_id,
-                total: invoice.total
-            });
-            $scope.invoiceItemsCurrent.forEach( (elem) => {
-                $scope.invoiceItemsAll.push(elem);
-            };
-            console.log($scope.invoiceItemsAll);
+    $scope.newInvoice = function () {
             $scope.initInvoice();
+            let invoice = $scope.invoice;
             $scope.initInvoiceItem();
+            $scope.formDisabled = false;
+        if ( angular.isDefined(invoice) ) {
+            $scope.postNewInvoice(invoice);
+            $scope.getInvoices(); 
         }
     }
 
     $scope.changeInput = function (elem) {
         if (elem=='customer') {
             $scope.invoice.customer_id = $scope.selectedCustomer.id;
+            $scope.invoice.customer_name = $scope.selectedCustomer.name;
+            $scope.putUpdatedInvoice( $scope.invoice );
         } else if (elem=='product') {
             $scope.invoiceItem.product_id = $scope.selectedProduct.id;
+            $scope.invoiceItem.product_name = $scope.selectedProduct.name;
+            $scope.invoiceItem.product_price = $scope.selectedProduct.price;
             $scope.invoiceItem.quantity = 1;
+        } else if (elem=='discount') {
+            $scope.totalCalc();
+            $scope.putUpdatedInvoice( $scope.invoice );
         }
     }
 
     $scope.addProduct2Invoice =function(invoiceItem) {
-        console.log(invoiceItem);
         if (angular.isDefined(invoiceItem) &&
-            angular.isDefined(invoiceItem.id) &&
             angular.isDefined(invoiceItem.invoice_id) &&
             angular.isDefined(invoiceItem.product_id) &&
             angular.isDefined(invoiceItem.quantity)) {
-            $scope.invoiceItemsCurrent.push({
-                id: invoiceItem.id,
-                invoice_id: invoiceItem.invoice_id,
-                product_id: invoiceItem.product_id,
-                quantity: invoiceItem.quantity
-            });
-            $scope.totalCalc();
+            $scope.postNewInvoiceItem(invoiceItem);
             $scope.initInvoiceItem();
         }
     }
 
     $scope.totalCalc = function() {
-        let total = $scope.invoiceItemsCurrent.reduce( (total, elem) => {
+        let total = $scope.invoiceItems.reduce( (total, elem) => {
             if (elem.invoice_id == $scope.invoice.id) {
-                return total + elem.quantity; 
+                // return total + elem.product_price * elem.quantity; 
+                return total + elem.product_price * elem.quantity; 
                 } else return total;
         }, 0);
-        $scope.invoice.total = total;
+        $scope.invoice.total = (total * ( 1 - $scope.invoice.discount )).toFixed(2);;
     }
 
-    $scope.initInvoice();
-    $scope.initInvoiceItem();
-    $scope.invoice.id = 101; 
-    $scope.invoiceItem.invoice_id = 101;
-    $scope.totalCalc();
-});
+    $scope.matchCustomerNameById = function(id) {
+        let index = $scope.customers.findIndex( (elem) => { return elem.id == id } );
+        return  $scope.customers[index].name 
+    }
+
+    $scope.matchProductNameById = function(id) {
+        let index = $scope.products.findIndex( (elem) => { return elem.id == id } );
+        return  $scope.products[index].name; 
+    }    
+
+    $scope.matchProductPriceById = function(id) {
+        let index = $scope.products.findIndex( (elem) => { return elem.id == id } );
+        return  $scope.products[index].price; 
+    }      
+
+    $scope.getCustomers();
+    $scope.getInvoices();
+    $scope.getProducts();
+
+})

@@ -1,44 +1,170 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+﻿<!DOCTYPE html>
+<html ng-app="invoiceApp">
+<head>
+    <title>Invoice Manager App</title>
 
-    <title></title>
-
-    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/css/app.css">
-  </head>
-  <body>
-
-    <nav class="navbar navbar-default navbar-static-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">Invoice App</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <li><a href="#">Products</a></li>
-            <li><a href="#">Customers</a></li>
-            <li><a href="#">Invoices</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
-
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css">    
+    <link rel="stylesheet" type="text/css" href="/css/app.css">    
+</head>
+<body>
+<nav class="navbar navbar-default navbar-static-top">
     <div class="container">
-      
-    </div> <!-- /container -->
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">Invoice App</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+        <li><a href="#">Products</a></li>
+        <li><a href="#">Customers</a></li>
+        <li><a href="#">Invoices</a></li>
+        </ul>
+    </div><!--/.nav-collapse -->
+    </div>
+</nav>    
+<div class="container">
+    <div class="row" ng-controller="defaultCtrl">
+        <div class="col-md-5 panel-primary">
+            <div class="panel-heading">
+                <div class="panel-title">
+                    <h3>
+                        Invoices
+                        <span class="label label-info">
+                            {{ (invoices).length }}
+                        </span>
+                    </h3>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <th>id</th>
+                    <th>customer name</th>
+                    <th>discount</th>
+                    <th>total</th>
+                </thead>                
+                <tbody>
+                    <tr ng-repeat="invoice in invoices">
+                        <td>{{invoice.id}}</td>
+                        <td>{{invoice.customer_name}}</td>
+                        <td>{{invoice.discount | percentage : 0 }}</td>
+                        <td>{{invoice.total | currency : "$" : "0" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-7">
+            <div class="well">
+                <div class="row">
+                    <div class="col-md-6 col-md-offset-3">
+                        <button class="btn btn-primary btn-block" ng-click="newInvoice()">New Invoice</button>
+                    </div>
+                </div>                
+                <h3>Invoice Form</h3>
+                <div class="form-group row">
+                    <label for="invoiceCustomer">Select customer:</label>
+                <select id="invoiceCustomer"
+                        class="form-control"
+                        ng-model="selectedCustomer"
+                        ng-options="customer.name for customer in customers track by customer.id"
+                        ng-disabled="formDisabled"
+                        ng-change="changeInput('customer')">
+                </select>                
+                </div>
+                <h3>Products in Invoice</h3>
+                <div class="row">
+                    <div class="col-md-5">
+                        <label for="invoiceDiscount">products:</label>
+                        <select id="invoiceProduct"
+                                class="form-control"
+                                ng-model="selectedProduct"
+                                ng-options="product.name for product in products track by product.id"
+                                ng-disabled="formDisabled"
+                                ng-change="changeInput('product')">
+                        </select>                             
+                    </div>
+                    <div class="col-md-2">
+                        <label>price:</label>
+                        <input type="text" class="form-control" value={{selectedProduct.price}} disabled/>
+                    </div>                    
+                    <div class="col-md-2">
+                        <label for="invoiceQuantity">quantity:</label>
+                        <input type="number" min="1"
+                            id="invoiceQuantity"
+                            class="form-control"
+                            ng-model="invoiceItem.quantity"
+                            ng-disabled="formDisabled"    
+                            ng-change="changeInput('quantity')"/>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="invoiceDiscount">Add:</label>
+                        <button class="btn btn-success btn-block"
+                            ng-click="addProduct2Invoice(invoiceItem)"
+                            ng-disabled="formDisabled"
+                            >Add Product</button>
+                    </div>
+
+                </div>                      
+
+                <div class="row">
+                    <table class="table">
+                        <thead>
+                            <th>id</th>
+                            <th>name</th>
+                            <th>price</th>
+                            <th>quantity</th>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="invoiceItem in invoiceItems | filter : {invoice_id : invoice.id}">
+                                <!--<td>{{ product.id }}</td>-->
+                                <td>{{invoiceItem.id}}</td>
+                                <td>{{invoiceItem.product_name}}</td>
+                                <td>{{invoiceItem.product_price}}</td>
+                                <td>{{invoiceItem.quantity}}</td>
+                            </tr>
+                        </tbody>
+                     </table>                   
+                </div>
+                <div class="row">
+                    <h3 class="invoice-total">invoice total = {{invoice.total}} </h3>
+                </div>    
+                <div class="form-group row">
+                    <label for="invoiceId">id:</label>
+                    <input type="number"
+                        id="invoiceId"
+                        class="form-control"
+                        ng-model="invoice.id"
+                        disabled
+                        ng-change="changeInput('id')"/>
+                </div>
+
+                <div class="form-group row">
+                    <label for="invoiceDiscount">discount %:</label>
+                    <input type="number" min="0" max="100" step="1"
+                        percent
+                        id="invoiceDiscount"
+                        class="form-control"
+                        ng-model="invoice.discount"
+                        ng-change="changeInput('discount')"
+                        ng-disabled="formDisabled"
+                        />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>    
 
     <script type="text/javascript" src="/js/lib/jquery/jquery-2.0.3.min.js"></script>
-    <script type="text/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
-    
-  </body>
+    <script type="text/javascript" src="js/lib/angularjs/angular.js"></script>
+    <script type="text/javascript" src="js/app-front.js"></script>
+    <script type="text/javascript" src="js/controller.js"></script>   
+    <script type="text/javascript" src="js/directive.js"></script>         
+    <script type="text/javascript" src="js/filters.js"></script>         
+</body>
 </html>
