@@ -1,4 +1,8 @@
-# here shoud be the text for client app as well
+# This is the Invoice App on AngularJS. 
+Front end part is in "public" folder.  
+
+###Please review and it would great to get your feedback! 
+
 # Dependencies
 
 - sqlite3
